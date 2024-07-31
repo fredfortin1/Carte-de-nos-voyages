@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carte de nos voyages</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; }
+        .auth-container { text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Carte de nos voyages</h1>
+        <button id="logout">Se déconnecter</button>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js"></script>
+    <script>
+        // Your Firebase configuration
+        var firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var auth = firebase.auth();
+
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                // User is signed in, show the map
+                var map = L.map('map').setView([51.505, -0.09], 2);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                document.getElementById('logout').onclick = function() {
+                    auth.signOut();
+                };
+            } else {
+                // No user is signed in, redirect to login page
+                window.location = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>
