@@ -4,21 +4,23 @@
     <title>Travel Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 600px; width: 100%; }
+        #map { height: 600px; width: 100%; margin-bottom: 20px; }
         .form-container { margin: 20px; }
         .form-container input, .form-container button { margin: 5px; }
     </style>
 </head>
 <body>
+    <div id="map"></div>
     <div class="form-container">
         <h1>Travel Map</h1>
         <form id="travel-form">
             <label for="location">Enter Location:</label>
             <input type="text" id="location" name="location" placeholder="City, Country" required>
+            <label for="date">Date of Visit:</label>
+            <input type="date" id="date" name="date" required>
             <button type="submit">Add to Map</button>
         </form>
     </div>
-    <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
@@ -27,12 +29,12 @@
     <script>
         // Your Firebase configuration
         var firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCkrF3AEsfCPjuICtV8zEVq_mI9Wut0HIE",
+            authDomain: "carte-de-nos-voyages.firebaseapp.com",
+            projectId: "carte-de-nos-voyages",
+            storageBucket: "carte-de-nos-voyages.appspot.com",
+            messagingSenderId: "143573866524",
+            appId: "1:143573866524:web:abf283832ffc0b4cbfe7d9"
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -48,24 +50,35 @@
         }).addTo(map);
 
         // Function to add marker to the map
-        function addMarker(location, lat, lng) {
-            L.marker([lat, lng]).addTo(map)
-                .bindPopup(location)
-                .openPopup();
+        function addMarker(location, date, lat, lng) {
+            var marker = L.marker([lat, lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            marker.bindPopup(`${location} - ${date}`).openPopup();
         }
 
         // Retrieve saved locations from Firestore
         db.collection("locations").get().then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
                 var data = doc.data();
-                addMarker(data.location, data.lat, data.lng);
+                console.log("Retrieved location:", data);
+                addMarker(data.location, data.date, data.lat, data.lng);
             });
+        }).catch((error) => {
+            console.error("Error retrieving locations:", error);
         });
 
         // Handle form submission
         document.getElementById('travel-form').addEventListener('submit', function(event) {
             event.preventDefault();
             var location = document.getElementById('location').value;
+            var date = document.getElementById('date').value;
 
             // Use an API to get the coordinates of the location
             axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${location}`)
@@ -73,25 +86,32 @@
                     if (response.data.length > 0) {
                         var lat = response.data[0].lat;
                         var lon = response.data[0].lon;
-                        addMarker(location, lat, lon);
+                        console.log("Location found:", location, date, lat, lon);
+                        addMarker(location, date, lat, lon);
                         map.setView([lat, lon], 8); // Zoom in to the added location
 
                         // Save the location to Firestore
                         db.collection("locations").add({
                             location: location,
+                            date: date,
                             lat: lat,
                             lng: lon
+                        }).then(() => {
+                            console.log("Location saved:", location, date);
+                        }).catch((error) => {
+                            console.error("Error saving location:", error);
                         });
                     } else {
                         alert('Location not found.');
                     }
                 })
                 .catch(function(error) {
-                    console.log(error);
+                    console.log("Error retrieving location data:", error);
                     alert('Error retrieving location data.');
                 });
 
             document.getElementById('location').value = ''; // Clear the input
+            document.getElementById('date').value = ''; // Clear the input
         });
     </script>
 </body>
