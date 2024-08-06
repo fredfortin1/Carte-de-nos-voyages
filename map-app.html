@@ -1,15 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Travel Map</title>
+    <title>Family Travel Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" />
     <style>
-        #map { height: 600px; width: 100%; margin-bottom: 20px; }
-        .form-container { margin: 20px; display: none; }
-        .login-container { margin: 20px; }
-        .login-container input, .login-container button { margin: 5px; }
-        .login-container { display: block; }
-        .content { display: none; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2 {
+            color: #444;
+            text-align: center;
+        }
+        #map { 
+            height: 600px; 
+            width: 100%; 
+            margin-bottom: 20px; 
+            border: 1px solid #ddd;
+        }
+        .form-container {
+            margin: 20px auto;
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-container input, .form-container textarea, .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .form-container button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #0056b3;
+        }
+        .login-container {
+            margin: 20px auto;
+            max-width: 400px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .login-container input, .login-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .login-container button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -24,17 +86,26 @@
         </form>
     </div>
     <div id="content" class="content">
-        <div id="map"></div>
+        <h1>Family Travel Map</h1>
         <div class="form-container" id="form-container">
-            <h1>Travel Map</h1>
+            <h2>Add a Trip</h2>
             <form id="travel-form">
                 <label for="location">Enter Location:</label>
-                <input type="text" id="location" name="location" placeholder="City, Country" required>
+                <input type="text" id="location" name="location" placeholder="City, Country" required><br>
                 <label for="date">Date of Visit:</label>
-                <input type="date" id="date" name="date" required>
+                <input type="date" id="date" name="date" required><br>
+                <label for="description">Description of the Trip:</label>
+                <textarea id="description" name="description" placeholder="Describe your trip" required></textarea><br>
+                <label for="companions">Who Came with You:</label>
+                <input type="text" id="companions" name="companions" placeholder="Names of companions" required><br>
+                <label for="duration">Duration of the Trip (days):</label>
+                <input type="number" id="duration" name="duration" placeholder="Number of days" required><br>
+                <label for="highlights">Highlights of the Trip:</label>
+                <textarea id="highlights" name="highlights" placeholder="Best parts of the trip" required></textarea><br>
                 <button type="submit">Add to Map</button>
             </form>
         </div>
+        <div id="map"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -69,7 +140,7 @@
                     maxZoom: 18,
                 }).addTo(map);
 
-                function addMarker(location, date, lat, lng) {
+                function addMarker(location, date, lat, lng, description, companions, duration, highlights) {
                     var marker = L.marker([lat, lng], {
                         icon: L.icon({
                             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
@@ -79,19 +150,25 @@
                             shadowSize: [41, 41]
                         })
                     }).addTo(map);
-                    marker.bindPopup(`${location} - ${date}`).openPopup();
+                    marker.bindPopup(
+                        `<strong>${location}</strong><br>Date: ${date}<br>Description: ${description}<br>Companions: ${companions}<br>Duration: ${duration} days<br>Highlights: ${highlights}`
+                    ).openPopup();
                 }
 
                 var savedLocations = JSON.parse(localStorage.getItem('locations')) || [];
                 savedLocations.forEach(function(data) {
                     console.log("Retrieved location:", data);
-                    addMarker(data.location, data.date, data.lat, data.lng);
+                    addMarker(data.location, data.date, data.lat, data.lng, data.description, data.companions, data.duration, data.highlights);
                 });
 
                 document.getElementById('travel-form').addEventListener('submit', function(event) {
                     event.preventDefault();
                     var location = document.getElementById('location').value;
                     var date = document.getElementById('date').value;
+                    var description = document.getElementById('description').value;
+                    var companions = document.getElementById('companions').value;
+                    var duration = document.getElementById('duration').value;
+                    var highlights = document.getElementById('highlights').value;
 
                     axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${location}`)
                         .then(function(response) {
@@ -99,10 +176,10 @@
                                 var lat = response.data[0].lat;
                                 var lon = response.data[0].lon;
                                 console.log("Location found:", location, date, lat, lon);
-                                addMarker(location, date, lat, lon);
+                                addMarker(location, date, lat, lon, description, companions, duration, highlights);
                                 map.setView([lat, lon], 8);
 
-                                savedLocations.push({ location: location, date: date, lat: lat, lng: lon });
+                                savedLocations.push({ location, date, lat, lng: lon, description, companions, duration, highlights });
                                 localStorage.setItem('locations', JSON.stringify(savedLocations));
                                 console.log("Location saved:", location, date);
                             } else {
@@ -116,6 +193,10 @@
 
                     document.getElementById('location').value = '';
                     document.getElementById('date').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('companions').value = '';
+                    document.getElementById('duration').value = '';
+                    document.getElementById('highlights').value = '';
                 });
             }
         });
